@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM EXIT: IT DEV TEAM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --terminal-green: #00FF41;
+            --amber: #ffb400; /* Warna emas poster */
+            --text-main: #e0e0e0;
+            --code-bg: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.78)),
+                url("images/hero.png");
+            background-size: 118%;
+            background-position: 50% 50%;
+            background-repeat: no-repeat;
+            z-index: -2;
+            transform-origin: center center;
+            transform: translateZ(0) scale(1.08);
+            animation: bg-balloon-float 32s ease-in-out infinite;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 20%, rgba(255, 180, 0, 0.16), transparent 55%);
+            z-index: -1;
+        }
+
+        body.awaiting-audio-choice #boot-screen {
+            display: none !important;
+        }
+
+        /* --- Audio prompt (sebelum boot) --- */
+        .audio-prompt {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(ellipse at 50% 30%, rgba(255, 180, 0, 0.12), transparent 55%), #050505;
+            font-family: 'Montserrat', sans-serif;
+            transition: opacity 0.45s ease, visibility 0.45s ease;
+        }
+
+        .audio-prompt.audio-prompt--dismissed {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .audio-prompt__card {
+            max-width: 420px;
+            width: 100%;
+            padding: 28px 26px 24px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: rgba(12, 12, 12, 0.96);
+            box-shadow: 0 0 0 1px rgba(255, 180, 0, 0.15), 0 20px 50px rgba(0, 0, 0, 0.75);
+        }
+
+        .audio-prompt__card h2 {
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--terminal-green);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .audio-prompt__card p {
+            font-size: 0.9rem;
+            color: #b0b0b0;
+            line-height: 1.55;
+            margin-bottom: 22px;
+        }
+
+        .audio-prompt__actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .audio-prompt__btn {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            padding: 14px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            text-align: center;
+            transition: background 0.25s, color 0.25s, border-color 0.25s, box-shadow 0.25s;
+        }
+
+        .audio-prompt__btn--primary {
+            background: transparent;
+            color: var(--amber);
+            border-color: var(--amber);
+        }
+
+        .audio-prompt__btn--primary:hover {
+            background: var(--amber);
+            color: #0a0a0a;
+            box-shadow: 0 0 18px rgba(255, 180, 0, 0.35);
+        }
+
+        .audio-prompt__btn--ghost {
+            background: transparent;
+            color: #777;
+            border-color: #444;
+        }
+
+        .audio-prompt__btn--ghost:hover {
+            color: #ccc;
+            border-color: #666;
+        }
+
+        /* --- Boot Sequence Overlay --- */
+        #boot-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 40px;
+            font-family: 'Fira Code', monospace;
+            color: var(--terminal-green);
+            font-size: 14px;
+            transition: opacity 0.8s ease;
+        }
+
+        #boot-screen p {
+            margin: 0 0 8px 0;
+            min-height: 1.2em;
+            letter-spacing: 0.2px;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            margin-left: 2px;
+            animation: blink 0.8s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* --- Background: gentle balloon float --- */
+        @keyframes bg-balloon-float {
+            0%, 100% {
+                transform: translate3d(0, 8px, 0) scale(1.08) rotate(0deg);
+                background-position: 48% 52%;
+            }
+            22% {
+                transform: translate3d(16px, -12px, 0) scale(1.085) rotate(0.45deg);
+                background-position: 56% 44%;
+            }
+            48% {
+                transform: translate3d(-12px, -28px, 0) scale(1.09) rotate(-0.4deg);
+                background-position: 42% 46%;
+            }
+            72% {
+                transform: translate3d(-18px, -6px, 0) scale(1.082) rotate(0.28deg);
+                background-position: 54% 56%;
+            }
+            88% {
+                transform: translate3d(8px, 4px, 0) scale(1.078) rotate(-0.12deg);
+                background-position: 50% 50%;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body::before {
+                animation: none !important;
+                transform: none;
+                background-size: cover;
+                background-position: center;
+            }
+
+            .ember-field {
+                display: none !important;
+            }
+        }
+
+        /* --- Flying embers (above bg, below content) --- */
+        .ember-field {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .ember {
+            position: absolute;
+            left: 0;
+            bottom: -12vh;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle at 35% 35%,
+                #fffcef 0%,
+                #ffd78a 22%,
+                #ff9a3c 52%,
+                rgba(200, 50, 10, 0.75) 78%,
+                transparent 100%
+            );
+            box-shadow:
+                0 0 3px 1px rgba(255, 230, 180, 0.95),
+                0 0 10px 2px rgba(255, 130, 50, 0.55),
+                0 0 24px 5px rgba(255, 70, 20, 0.28);
+            opacity: 0;
+            animation: ember-rise var(--dur, 10s) cubic-bezier(0.2, 0.65, 0.35, 1) infinite;
+            animation-delay: var(--delay, 0s);
+            filter: blur(0.2px);
+        }
+
+        .ember.ember--fat {
+            filter: blur(0.55px);
+            box-shadow:
+                0 0 5px 2px rgba(255, 220, 160, 0.9),
+                0 0 16px 4px rgba(255, 110, 40, 0.5),
+                0 0 36px 10px rgba(255, 50, 0, 0.22);
+        }
+
+        @keyframes ember-rise {
+            0% {
+                transform: translate3d(0, 18vh, 0) scale(var(--s0, 0.45)) rotate(0deg);
+                opacity: 0;
+            }
+            4% {
+                opacity: 0.95;
+            }
+            55% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate3d(var(--drift, 0px), var(--rise, -110vh), 0) scale(var(--s1, 1)) rotate(var(--rot, 18deg));
+                opacity: 0;
+            }
+        }
+
+        /* --- Main Content --- */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            opacity: 0; /* hidden until boot finish */
+            transition: opacity 1.5s ease-in;
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .glitch {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--amber);
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .headline-image {
+            display: block;
+            width: min(100%, 620px);
+            height: auto;
+            margin: 20px auto 8px;
+            filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.55));
+        }
+
+        /* --- Code Block Styles --- */
+        .code-window {
+            background: var(--code-bg);
+            border-radius: 6px;
+            border: 1px solid #333;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .window-header {
+            background: #252525;
+            padding: 10px 15px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .red { background: #ff5f56; }
+        .yellow { background: #ffbd2e; }
+        .green { background: #27c93f; }
+
+        .window-body {
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            color: #dcdcaa;
+        }
+
+        .comment { color: #6a9955; }
+        .string { color: #ce9178; }
+        .keyword { color: #569cd6; }
+        .function { color: #dcdcaa; }
+
+        /* --- Alumni Slider (Swiper) --- */
+        .alumni-slider {
+            margin-top: 16px;
+            margin-bottom: 44px;
+        }
+
+        .alumni-slider .swiper {
+            padding-bottom: 46px;
+        }
+
+        .alumni-slide-card {
+            display: grid;
+            grid-template-columns: minmax(190px, 240px) 1fr;
+            gap: 24px;
+            align-items: center;
+            background: rgba(15, 15, 15, 0.9);
+            border: 1px solid #2a2a2a;
+            border-left: 3px solid var(--amber);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 260px;
+            overflow: hidden;
+        }
+
+        .alumni-photo {
+            width: 100%;
+            aspect-ratio: 4 / 5;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #3c3c3c;
+            background: #121212;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transform: translateX(-44px);
+            transition: opacity 0.75s ease, transform 0.85s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .alumni-copy {
+            opacity: 0;
+            transform: translateX(44px);
+            transition: opacity 0.75s ease, transform 0.85s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .swiper-slide-active .alumni-photo,
+        .swiper-slide-active .alumni-copy {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .alumni-copy h4 {
+            color: var(--amber);
+            margin-bottom: 6px;
+            font-size: 1.2rem;
+            letter-spacing: 0.2px;
+        }
+
+        .alumni-tagline {
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #9c9c9c;
+            margin-bottom: 6px;
+        }
+
+        .alumni-role {
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .alumni-story {
+            font-size: 13px;
+            color: #b5b5b5;
+            line-height: 1.7;
+        }
+
+        /* .alumni-slider .swiper-button-next,
+        .alumni-slider .swiper-button-prev {
+            color: var(--amber);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 180, 0, 0.45);
+            background: rgba(12, 12, 12, 0.75);
+            backdrop-filter: blur(1px);
+        }
+
+        .alumni-slider .swiper-button-next::after,
+        .alumni-slider .swiper-button-prev::after {
+            font-size: 13px;
+            font-weight: 700;
+        } */
+
+        .alumni-slider .swiper-pagination-bullet {
+            background: #6f6f6f;
+            opacity: 1;
+        }
+
+        .alumni-slider .swiper-pagination-bullet-active {
+            background: var(--amber);
+            box-shadow: 0 0 8px rgba(255, 180, 0, 0.42);
+        }
+
+        /* --- RSVP Section --- */
+        .rsvp-section {
+            text-align: center;
+            padding: 60px 0;
+            border-top: 1px solid #222;
+        }
+
+        .terminal-prompt {
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 25px;
+        }
+
+        .btn-rsvp {
+            display: inline-block;
+            background: transparent;
+            color: var(--amber);
+            border: 2px solid var(--amber);
+            padding: 15px 30px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn-rsvp:hover {
+            background: var(--amber);
+            color: black;
+            box-shadow: 0 0 20px rgba(255, 180, 0, 0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .glitch { font-size: 1.5rem; }
+            #boot-screen { padding: 20px; font-size: 12px; }
+            .audio-prompt__card { padding: 22px 18px 18px; }
+            .audio-prompt__card h2 { font-size: 0.9rem; }
+            .alumni-slide-card {
+                grid-template-columns: 1fr;
+                gap: 14px;
+                padding: 16px;
+            }
+            .alumni-photo {
+                max-width: 220px;
+                margin: 0 auto;
+            }
+            .alumni-copy h4 {
+                font-size: 1.05rem;
+            }
+            .alumni-story {
+                font-size: 12px;
+            }
+            .alumni-slider .swiper-button-next,
+            .alumni-slider .swiper-button-prev {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="awaiting-audio-choice">
+
+    <div
+        id="audio-prompt"
+        class="audio-prompt"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="audio-prompt-title"
+    >
+        <div class="audio-prompt__card">
+            <h2 id="audio-prompt-title">> enable_audio.output</h2>
+            <p>
+                Situs ini memutar backsound setelah layar boot selesai. Browser biasanya membutuhkan izin dari kamu dulu
+                supaya audio bisa diputar. Pilih salah satu untuk melanjutkan.
+            </p>
+            <div class="audio-prompt__actions">
+                <button type="button" class="audio-prompt__btn audio-prompt__btn--primary" id="audio-prompt-yes">
+                    Ya, aktifkan suara
+                </button>
+                <button type="button" class="audio-prompt__btn audio-prompt__btn--ghost" id="audio-prompt-no">
+                    Lanjut tanpa suara
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="boot-screen"></div>
+    <div class="ember-field" id="ember-field" aria-hidden="true"></div>
+
+    <!-- Taruh file backsound.mp3 (atau .ogg) di folder yang sama dengan index.html -->
+    <audio id="bgm" loop playsinline preload="auto">
+        <source src="sounds/backsound.mp3" type="audio/mpeg">
+        <source src="sounds/backsound.ogg" type="audio/ogg">
+    </audio>
+
+    <div class="container" id="main-content">
+        
+        <section class="hero">
+            <img src="images/headline.png" alt="End of an Era" class="headline-image">
+            <!-- <p style="color: #888; font-family: 'Fira Code';">Start of a New Adventure</p> -->
+        </section>
+
+        <div class="code-window">
+            <div class="window-header">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+                <span style="margin-left: 10px; font-size: 12px; color: #666;">git-history — IT_DEV</span>
+            </div>
+            <div class="window-body">
+                <p><span class="keyword">git</span> commit -m <span class="string">"End of an Era, Start of a New Adventure"</span></p>
+                <p><span class="keyword">git</span> tag -a v.Final -m <span class="string">"The end of a great chapter"</span></p>
+                <p><span class="keyword">git</span> push origin <span class="amber">FUTURE</span></p>
+                <br>
+                <p class="comment">// Message from the team:</p>
+                <p>"Terima kasih untuk semua kolaborasi hebatnya! Perjalanan ini tidak akan berjalan lancar tanpa dukungan rekan-rekan dari berbagai divisi. Hari ini kita rehat sejenak dari semua deadline dan pitching untuk merayakan kebersamaan."</p>
+            </div>
+        </div>
+
+        <div class="code-window">
+            <div class="window-header">
+                <span style="margin-left: 10px; font-size: 12px; color: #666;">event_config.json</span>
+            </div>
+            <div class="window-body">
+                <span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">"Memories"</span> <span class="keyword">WHERE</span> status = <span class="string">'Unforgettable'</span>;
+                <br><br>
+                {<br>
+                &nbsp;&nbsp;<span class="function">"runtime"</span>: <span class="string">"22 May | 18:30"</span>,<br>
+                &nbsp;&nbsp;<span class="function">"location"</span>: <span class="string">"Teras Ngerumpi, Lebak Bulus"</span>,<br>
+                &nbsp;&nbsp;<span class="function">"map_url"</span>: <span class="string">"<a href="https://share.google/EyHdPRI7sCDQmIHcp" style="color: #ce9178;">https://share.google/EyHdPRI7sCDQmIHcp</a>"</span>,<br>
+                &nbsp;&nbsp;<span class="function">"special_invite"</span>: <span class="string">"All Cross-Functional Partners & Friends**"</span>,<br>
+                &nbsp;&nbsp;<span class="function">"merge_conflicts"</span>: <span class="keyword">false</span>,<br>
+                &nbsp;&nbsp;<span class="function">"status"</span>: <span class="string">"Ready to Celebrate"</span><br>
+                }
+            </div>
+        </div>
+
+        <h3 style="font-family: 'Fira Code'; margin-bottom: 20px; color: var(--amber);">> The_Alumni_Logs.txt <span style="font-size:10px; color:#888;">(Swipe to decrypt our real stories)</span></h3>
+        <div class="alumni-slider">
+            <div class="swiper" id="alumni-swiper">
+                <div class="swiper-wrapper">
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/anto.webp" alt="Foto Nurhidayanto">
+                            <div class="alumni-copy">
+                                <h4>Nurhidayanto</h4>
+                                <p class="alumni-tagline">The Founding Father</p>
+                                <p class="alumni-role">> role: Frontend | Exit #3</p>
+                                <p class="alumni-story">Yang paling tua, pendiri tim ini, dan "bapak" penengah kalau kita lagi ribut. Dijanjikan jadi partner bisnis, tapi realitanya malah ditegur karena telat dan dipaksa kerja cepat dengan brief yang nggak pernah jelas. Orang ketiga yang akhirnya memilih angkat kaki dari janji kosong ini.</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/wiwit.webp" alt="Foto Wiwit Jumianto">
+                            <div class="alumni-copy">
+                                <h4>Wiwit Jumianto</h4>
+                                <p class="alumni-tagline">The Broken Promise Exception</p>
+                                <p class="alumni-role">> role: Backend | Exit #2</p>
+                                <p class="alumni-story">Orang yang pertama kali ngajak Ridho gabung. Sosok yang tegas dan cool, sekaligus Team Leader kedua. Sama seperti yang lain, dia dijanjikan banyak hal yang ujung-ujungnya nggak cuma ga ditepati, tapi narasinya diputar balik. Kekecewaannya bikin dia jadi orang kedua yang log out dari sini.</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/cahyo.webp" alt="Foto Cahyo">
+                            <div class="alumni-copy">
+                                <h4>Cahyo</h4>
+                                <p class="alumni-tagline">The First to See the Wall</p>
+                                <p class="alumni-role">> role: Mobile | Exit #1</p>
+                                <p class="alumni-story">Seniornya Wiwit dan Team Leader pertama di kantor ini. Perfeksionis dan sangat tegas. Sejak awal kantor masih kecil, dia yang harus berhadapan dengan brief dan business logic CEO yang nggak pernah jelas. Sadar tempat ini nggak akan berkembang sesuai harapan, dia jadi orang pertama yang cabut.</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/ridho.webp" alt="Foto Ridho Mufti Asyari">
+                            <div class="alumni-copy">
+                                <h4>Ridho Mufti Asyari</h4>
+                                <p class="alumni-tagline">The Jack of All Trades (Discarded)</p>
+                                <p class="alumni-role">> role: Team Lead, BE, DevOps, SA | Exit #6</p>
+                                <p class="alumni-story">Masuk sebagai freelancer, lalu memikul semuanya dari DevOps, BE, SA, sampai pasang jaringan. Belajar mati-matian demi nutupin kekurangan tim. Dijanjikan "partner bisnis", tapi saat kantor mulai growth, dia dibuang dari circle keputusan-bahkan sekadar minta papan tulis buat tim aja nggak dikasih. Resign tanpa diajak bicara, menjadi orang keenam yang keluar.</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/adam.webp" alt="Foto Adam Sugian">
+                            <div class="alumni-copy">
+                                <h4>Adam Sugian</h4>
+                                <p class="alumni-tagline">The Loyalty Beyond Toxic</p>
+                                <p class="alumni-role">> role: Frontend | Exit #7</p>
+                                <p class="alumni-story">Teman kuliah Ridho, sang Joker pembawa tawa di kantor yang rela PP Tangerang-Rempoa 40km (2 jam). Pas Ridho nyerah dan mau resign, dia cuma bilang: "Kalo ga ada lu, mau apa gw di sini? Lu aja sampe segitunya diperlakukan. Buat apa bertahan dengan toxic?" H+1 Ridho resign, Adam langsung ikut resign.</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/azzy.webp" alt="Foto Azzy Kesuma">
+                            <div class="alumni-copy">
+                                <h4>Azzy Kesuma</h4>
+                                <p class="alumni-tagline">The Professional from the Cave</p>
+                                <p class="alumni-role">> role: Frontend | Exit #4</p>
+                                <p class="alumni-story">Mantan remote worker yang kerjanya super cepat dan profesional abis (sampai kita segan minta dia lembur). Awalnya nerd banget kayak baru keluar goa, sampai akhirnya luluh dan bisa ngakak bareng tongkrongan ini. Muak dengan janji-janji manis kantor, Azzy menjadi orang keempat yang keluar.</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/syakur.webp" alt="Foto Muh Syakur">
+                            <div class="alumni-copy">
+                                <h4>Muh Syakur</h4>
+                                <p class="alumni-tagline">The Long-Awaited Shield</p>
+                                <p class="alumni-role">> role: Project Manager | Exit #5</p>
+                                <p class="alumni-story">PM yang ditunggu bertahun-tahun, tapi baru dikasih pas Ridho udah niat resign (ironis, kan?). Awalnya sok cool dan perfeksionis, padahal aslinya kocak. Jago banget komunikasi sama client dan nahan request nggak masuk akal. Syakur jadi orang kelima yang menyelesaikan masa tugasnya di sini.</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="swiper-slide">
+                        <div class="alumni-slide-card">
+                            <img class="alumni-photo" src="images/alumnis/wafiy.webp" alt="Foto Wafiy Ulhaq">
+                            <div class="alumni-copy">
+                                <h4>Wafiy Ulhaq</h4>
+                                <p class="alumni-tagline">The Visionary Little Brother</p>
+                                <p class="alumni-role">> role: UI/UX | Exit #8</p>
+                                <p class="alumni-story">Mirip vokalis band, hobi sepeda & fotografi, rela PP Bogor-Rempoa 40km. Waktu tech-test, solusinya out of the box banget. Di kantor dia jadi tempat curhatnya Syakur (udah kayak adiknya sendiri). Setelah dapet bocoran dari Ridho soal kondisi kapal, dia cari kerja baru dan jadi orang kedelapan (terakhir) yang menutup era ini.</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                <!-- <div class="swiper-button-prev"></div>
+                <div class="swiper-button-next"></div> -->
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+
+        <section class="rsvp-section">
+            <div class="terminal-prompt">
+                <span style="color: var(--terminal-green); font-weight: bold;">guest@it-dev:~$</span> execute farewell.sh? (y/n)
+            </div>
+            <a href="https://wa.me/NOMOR_WHATSAPP_LU" class="btn-rsvp">Confirm Attendance</a>
+            <p style="margin-top: 20px; font-size: 11px; color: #555;">No more merge conflicts, just a perfect evening.</p>
+        </section>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        // --- Boot Sequence Script ---
+        const bootScreen = document.getElementById('boot-screen');
+        const mainContent = document.getElementById('main-content');
+        const bgm = document.getElementById('bgm');
+        const audioPrompt = document.getElementById('audio-prompt');
+        const audioPromptYes = document.getElementById('audio-prompt-yes');
+        const audioPromptNo = document.getElementById('audio-prompt-no');
+
+        let bgmEnabled = false;
+        let alumniSwiper = null;
+
+        function startBgm() {
+            if (!bgmEnabled || !bgm) return;
+            bgm.volume = 0.38;
+            bgm.play().catch(() => {
+                if (bgm._unlockAttached) return;
+                bgm._unlockAttached = true;
+                const unlock = () => {
+                    bgm.play().catch(() => {});
+                    document.removeEventListener('pointerdown', unlock);
+                    document.removeEventListener('keydown', unlock);
+                };
+                document.addEventListener('pointerdown', unlock, { passive: true });
+                document.addEventListener('keydown', unlock);
+            });
+        }
+
+        function primeBgmFromGesture() {
+            if (!bgm) return;
+            bgm.volume = 0.38;
+            bgm.play()
+                .then(() => {
+                    bgm.pause();
+                    bgm.currentTime = 0;
+                })
+                .catch(() => {});
+        }
+
+        function resetMainViewState() {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            if (alumniSwiper) {
+                alumniSwiper.slideToLoop(0, 0, false);
+                if (alumniSwiper.autoplay) {
+                    alumniSwiper.autoplay.stop();
+                    alumniSwiper.autoplay.start();
+                }
+            }
+        }
+
+        function dismissAudioPrompt(enableSound) {
+            bgmEnabled = !!enableSound;
+            document.body.classList.remove('awaiting-audio-choice');
+            if (enableSound) primeBgmFromGesture();
+            if (audioPrompt) {
+                audioPrompt.classList.add('audio-prompt--dismissed');
+                window.setTimeout(() => {
+                    audioPrompt.hidden = true;
+                }, 480);
+            }
+            runBootSequence();
+        }
+
+        if (audioPromptYes) audioPromptYes.addEventListener('click', () => dismissAudioPrompt(true));
+        if (audioPromptNo) audioPromptNo.addEventListener('click', () => dismissAudioPrompt(false));
+        
+        const lines = [
+            "> Initializing SYSTEM EXIT protocol...",
+            "> Checking dependencies...",
+            "> [ERROR] Management competence not found.",
+            "> [ERROR] Toxicity levels at 99%.",
+            "> Finding new opportunities... SUCCESS.",
+            "> Starting IT_DEV mass migration...",
+            "> Loading memories...",
+            "> SYSTEM READY. Press any key to continue..."
+        ];
+
+        const TYPE_SPEED = 30;
+        const LINE_PAUSE = 520;
+        const FINISH_PAUSE = 2200;
+
+        function typeLine(lineText, done) {
+            const p = document.createElement('p');
+            bootScreen.appendChild(p);
+
+            let charIndex = 0;
+            const intervalId = setInterval(() => {
+                charIndex++;
+                const visibleText = lineText.slice(0, charIndex);
+                p.innerHTML = `${visibleText}<span class="typing-cursor">_</span>`;
+
+                if (charIndex >= lineText.length) {
+                    clearInterval(intervalId);
+                    p.textContent = lineText;
+                    setTimeout(done, LINE_PAUSE);
+                }
+            }, TYPE_SPEED);
+        }
+
+        function runBootSequence(lineIdx = 0) {
+            if (lineIdx >= lines.length) {
+                setTimeout(() => {
+                    bootScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        bootScreen.style.display = 'none';
+                        resetMainViewState();
+                        mainContent.style.opacity = '1';
+                        if (bgmEnabled) startBgm();
+                    }, 850);
+                }, FINISH_PAUSE);
+                return;
+            }
+
+            typeLine(lines[lineIdx], () => runBootSequence(lineIdx + 1));
+        }
+
+        window.addEventListener('load', () => {
+            audioPromptYes?.focus();
+        });
+
+        // --- Flying embers (random bara) ---
+        let emberResizeTimer;
+        function initEmberField() {
+            const field = document.getElementById('ember-field');
+            if (!field) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                field.replaceChildren();
+                field.style.display = 'none';
+                return;
+            }
+            field.style.display = '';
+            field.replaceChildren();
+            const w = window.innerWidth;
+            const count = w < 480 ? 30 : w < 900 ? 46 : 62;
+            for (let i = 0; i < count; i++) {
+                const ember = document.createElement('span');
+                ember.className = 'ember';
+                if (Math.random() < 0.38) ember.classList.add('ember--fat');
+                const x = Math.random() * 106 - 3;
+                const dur = 5.5 + Math.random() * 13;
+                const delay = -Math.random() * dur;
+                const fat = ember.classList.contains('ember--fat');
+                const base = 2 + Math.random() * (fat ? 7 : 4);
+                const h = Math.max(2, base * (0.65 + Math.random() * 0.55));
+                const drift = -95 + Math.random() * 190;
+                const rise = -(88 + Math.random() * 38);
+                const rot = -40 + Math.random() * 80;
+                ember.style.left = `${x}%`;
+                ember.style.width = `${base}px`;
+                ember.style.height = `${h}px`;
+                ember.style.setProperty('--dur', `${dur}s`);
+                ember.style.setProperty('--delay', `${delay}s`);
+                ember.style.setProperty('--drift', `${drift}px`);
+                ember.style.setProperty('--rise', `${rise}vh`);
+                ember.style.setProperty('--rot', `${rot}deg`);
+                ember.style.setProperty('--s0', (0.28 + Math.random() * 0.45).toFixed(3));
+                ember.style.setProperty('--s1', (0.82 + Math.random() * 0.45).toFixed(3));
+                field.appendChild(ember);
+            }
+        }
+        window.addEventListener('load', initEmberField);
+        window.addEventListener('resize', () => {
+            clearTimeout(emberResizeTimer);
+            emberResizeTimer = setTimeout(initEmberField, 320);
+        });
+
+        // --- Alumni Swiper ---
+        window.addEventListener('load', () => {
+            if (!window.Swiper) return;
+            alumniSwiper = new Swiper('#alumni-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                speed: 900,
+                loop: true,
+                grabCursor: true,
+                autoplay: {
+                    delay: 5200,
+                    disableOnInteraction: false
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev'
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true
+                },
+                keyboard: {
+                    enabled: true
+                }
+            });
+        });
+
+        // --- Easter Egg ---
+        console.log("%c WARNING: SYSTEM OVERLOAD ", "background: red; color: white; font-size: 20px; font-weight: bold;");
+        console.log("Error: 404 - Management vision not found.");
+        console.log("Action: IT Dev Team has successfully escaped the matrix.");
+    </script>
+</body>
+</html>
