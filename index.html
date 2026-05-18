@@ -476,6 +476,132 @@
             box-shadow: 0 0 20px rgba(255, 180, 0, 0.4);
         }
 
+        button.btn-rsvp {
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        /* --- RSVP modals --- */
+        .rsvp-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 11000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(5, 5, 5, 0.88);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+        }
+
+        .rsvp-modal.rsvp-modal--visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .rsvp-modal__card {
+            max-width: 768px;
+            width: 100%;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: rgba(12, 12, 12, 0.98);
+            box-shadow: 0 0 0 1px rgba(255, 180, 0, 0.12), 0 24px 60px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        .rsvp-modal--loading .rsvp-modal__card {
+            max-width: 320px;
+            padding: 36px 28px;
+            text-align: center;
+        }
+
+        .rsvp-loading__label {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--terminal-green);
+            margin-bottom: 20px;
+            letter-spacing: 0.3px;
+        }
+
+        .rsvp-loading__spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 3px solid #333;
+            border-top-color: var(--amber);
+            border-radius: 50%;
+            animation: rsvp-spin 0.75s linear infinite;
+        }
+
+        @keyframes rsvp-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .rsvp-thanks__banner {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-bottom: 1px solid #222;
+        }
+
+        .rsvp-thanks__body {
+            padding: 24px 26px 22px;
+        }
+
+        .rsvp-thanks__body h3 {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--amber);
+            margin-bottom: 14px;
+            letter-spacing: 0.4px;
+        }
+
+        .rsvp-thanks__body p {
+            font-size: 0.9rem;
+            color: #c8c8c8;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .rsvp-thanks__quote {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.78rem;
+            color: var(--terminal-green);
+            line-height: 1.65;
+            padding: 14px 16px;
+            border-left: 3px solid var(--amber);
+            background: rgba(0, 255, 65, 0.04);
+            margin-bottom: 22px;
+            font-style: italic;
+        }
+
+        .rsvp-thanks__close {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--amber);
+            border-radius: 4px;
+            background: transparent;
+            color: var(--amber);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+        }
+
+        .rsvp-thanks__close:hover {
+            background: var(--amber);
+            color: #0a0a0a;
+            box-shadow: 0 0 16px rgba(255, 180, 0, 0.35);
+        }
+
         /* Responsive */
         @media (max-width: 600px) {
             .glitch { font-size: 1.5rem; }
@@ -684,10 +810,50 @@
             <div class="terminal-prompt">
                 <span style="color: var(--terminal-green); font-weight: bold;">guest@it-dev:~$</span> execute farewell.sh? (y/n)
             </div>
-            <a href="https://wa.me/NOMOR_WHATSAPP_LU" class="btn-rsvp">Confirm Attendance</a>
+            <button type="button" class="btn-rsvp" id="btn-rsvp">Confirm Attendance</button>
             <p style="margin-top: 20px; font-size: 11px; color: #555;">No more merge conflicts, just a perfect evening.</p>
         </section>
 
+    </div>
+
+    <div id="rsvp-loading-modal" class="rsvp-modal rsvp-modal--loading" hidden aria-hidden="true" aria-live="polite">
+        <div class="rsvp-modal__card">
+            <p class="rsvp-loading__label">&gt; processing farewell.sh...</p>
+            <div class="rsvp-loading__spinner" aria-hidden="true"></div>
+        </div>
+    </div>
+
+    <div
+        id="rsvp-thanks-modal"
+        class="rsvp-modal"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rsvp-thanks-title"
+        aria-hidden="true"
+    >
+        <div class="rsvp-modal__card">
+            <img
+                class="rsvp-thanks__banner"
+                src="images/alumnis/alumnis.webp"
+                alt="Banner alumni IT Dev"
+                width="480"
+                height="270"
+            >
+            <div class="rsvp-thanks__body">
+                <h3 id="rsvp-thanks-title">&gt; attendance.confirmed</h3>
+                <p>
+                    Terima kasih telah meluangkan waktu untuk hadir di malam perpisahan ini.
+                    Kehadiranmu berarti lebih dari sekadar RSVP — itu tanda bahwa jejak kita di sini
+                    tak pernah benar-benar terhapus.
+                </p>
+                <blockquote class="rsvp-thanks__quote">
+                    &ldquo;Berlalu bukan berarti hilang; kita berpisah hari ini agar suatu hari
+                    bisa bertemu lagi dengan cerita yang lebih panjang dan tawa yang lebih keras.&rdquo;
+                </blockquote>
+                <button type="button" class="rsvp-thanks__close" id="rsvp-thanks-close">Tutup</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -882,6 +1048,51 @@
                     enabled: true
                 }
             });
+        });
+
+        // --- RSVP flow ---
+        const btnRsvp = document.getElementById('btn-rsvp');
+        const rsvpLoadingModal = document.getElementById('rsvp-loading-modal');
+        const rsvpThanksModal = document.getElementById('rsvp-thanks-modal');
+        const rsvpThanksClose = document.getElementById('rsvp-thanks-close');
+
+        function showRsvpModal(modal) {
+            if (!modal) return;
+            modal.hidden = false;
+            modal.setAttribute('aria-hidden', 'false');
+            requestAnimationFrame(() => modal.classList.add('rsvp-modal--visible'));
+        }
+
+        function hideRsvpModal(modal) {
+            if (!modal) return;
+            modal.classList.remove('rsvp-modal--visible');
+            modal.setAttribute('aria-hidden', 'true');
+            window.setTimeout(() => {
+                modal.hidden = true;
+            }, 360);
+        }
+
+        function closeRsvpThanksModal() {
+            hideRsvpModal(rsvpThanksModal);
+        }
+
+        btnRsvp?.addEventListener('click', () => {
+            showRsvpModal(rsvpLoadingModal);
+            window.setTimeout(() => {
+                hideRsvpModal(rsvpLoadingModal);
+                showRsvpModal(rsvpThanksModal);
+                rsvpThanksClose?.focus();
+            }, 1000);
+        });
+
+        rsvpThanksClose?.addEventListener('click', closeRsvpThanksModal);
+        rsvpThanksModal?.addEventListener('click', (e) => {
+            if (e.target === rsvpThanksModal) closeRsvpThanksModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && rsvpThanksModal?.classList.contains('rsvp-modal--visible')) {
+                closeRsvpThanksModal();
+            }
         });
 
         // --- Easter Egg ---
