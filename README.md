@@ -1,6 +1,6 @@
 # SYSTEM EXIT: IT Dev Team
 
-**End of an Era** — a single-file static landing page for an IT dev team farewell: terminal / git UI, optional BGM, boot sequence, and an alumni story carousel. Primary copy is **Indonesian** (`lang="id"`).
+**End of an Era** — a single-file static landing page for an IT dev team farewell: terminal / git UI, optional audio, typed boot overlay, alumni story carousel, and an in-page RSVP confirmation flow. Primary copy is **Indonesian** (`lang="id"`).
 
 ---
 
@@ -8,11 +8,29 @@
 
 | Area | Description |
 |------|-------------|
-| **Intro** | Audio on/off gate, then a typed boot overlay |
+| **Intro** | Audio on/off gate, then a typed boot overlay (`#boot-screen`) |
 | **Hero** | `images/hero.png` background animation + `images/headline.png` |
 | **Story** | Git-style “commit” window + faux `event_config.json` (when / where / map) |
-| **Alumni** | Swiper 11 slider — WebP portraits under `images/alumnis/` |
-| **RSVP** | WhatsApp CTA (replace placeholder in `index.html`) |
+| **Alumni** | Swiper carousel — 8 slides with WebP portraits under `images/alumnis/` |
+| **RSVP** | **Confirm Attendance** opens a 1s loading modal, then a thank-you modal with banner, message, and quote (no external link) |
+| **Effects** | Floating ember particles (disabled when `prefers-reduced-motion: reduce`) |
+
+### Audio
+
+| Track | When it plays |
+|-------|----------------|
+| `sounds/backsound.mp3` / `.ogg` | After boot finishes, **only** if the visitor chose **Ya, aktifkan suara** |
+| `sounds/system_sound.mp3` / `.ogg` | Asset on disk for boot SFX; wire in `index.html` if you want sound during the boot overlay |
+
+Browsers require a user gesture before audio; the intro prompt satisfies that for BGM.
+
+### RSVP flow
+
+1. Visitor clicks **Confirm Attendance** (`#btn-rsvp`).
+2. Loading modal: `> processing farewell.sh...` (~1 second).
+3. Thank-you modal: `images/alumnis/alumnis.webp`, thank-you copy, farewell quote, **Tutup** (or click backdrop / **Escape**).
+
+Edit copy in the `#rsvp-thanks-modal` block and RSVP-related strings in the `<script>` section of `index.html`.
 
 ---
 
@@ -26,6 +44,7 @@ end-of-an-era/
 │   ├── hero.png
 │   ├── headline.png
 │   └── alumnis/
+│       ├── alumnis.webp    # RSVP thank-you banner
 │       ├── anto.webp
 │       ├── wiwit.webp
 │       ├── cahyo.webp
@@ -36,7 +55,9 @@ end-of-an-era/
 │       └── wafiy.webp
 └── sounds/
     ├── backsound.mp3
-    └── backsound.ogg       # Secondary <source> for broader codec support
+    ├── backsound.ogg       # Secondary <source> for broader codec support
+    ├── system_sound.mp3
+    └── system_sound.ogg    # Optional secondary <source> for boot SFX
 ```
 
 ---
@@ -44,7 +65,7 @@ end-of-an-era/
 ## Tech stack
 
 - **HTML + CSS + JavaScript** — no build step
-- **[Swiper](https://swiperjs.com/) 11** — CSS + JS from jsDelivr
+- **[Swiper](https://swiperjs.com/) 11** — CSS + JS from jsDelivr (alumni carousel, loop + autoplay)
 - **[Google Fonts](https://fonts.google.com/)** — Montserrat, Fira Code
 
 ---
@@ -70,11 +91,12 @@ Upload the **`end-of-an-era`** folder contents (or the whole folder as site root
 
 ## Before publishing
 
-1. **RSVP** — Set the real link: search for `wa.me/NOMOR_WHATSAPP_LU` in `index.html`.
-2. **Event** — Edit date, location, and `map_url` in the JSON-style block.
-3. **Alumni** — Update names, taglines, roles, stories, and `images/alumnis/*` paths if files change.
-4. **Boot text** — Edit the boot line strings in the `<script>` at the bottom of `index.html`.
-5. **Accessibility** — Keep meaningful `alt` text on images when you swap photos.
+1. **Event** — Edit date, location, and `map_url` in the JSON-style block inside `index.html`.
+2. **Alumni** — Update names, taglines, roles, stories, and `images/alumnis/*` paths if files change (one slide per `<article class="swiper-slide">`).
+3. **RSVP** — Adjust thank-you title, body text, quote, and `alumnis.webp` in `#rsvp-thanks-modal`; change loading label in `#rsvp-loading-modal` if needed.
+4. **Audio** — Replace or add files under `sounds/`; keep `<source>` paths in sync. To play boot SFX during the overlay, add a `<audio id="boot-sound">` and call it from `runBootSequence()` when `bgmEnabled` is true.
+5. **Boot text** — Edit the boot line strings in the `<script>` at the bottom of `index.html`.
+6. **Accessibility** — Keep meaningful `alt` text on images when you swap photos; RSVP modals use `role="dialog"` and `aria-*` attributes.
 
 ---
 
